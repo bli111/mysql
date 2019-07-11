@@ -36,35 +36,65 @@ module MysqlCookbook
         cookbook 'mysql'
         action :create
       end
-
-      # this is the main systemd unit file
-      template "/etc/systemd/system/#{mysql_name}.service" do
-        path "/etc/systemd/system/#{mysql_name}.service"
-        source 'systemd/mysqld.service.erb'
-        owner 'root'
-        group 'root'
-        mode '0644'
-        variables(
-          config: new_resource,
-          etc_dir: etc_dir,
-          base_dir: base_dir,
-          mysqld_bin: mysqld_bin,
-          mysql_systemd_start_pre: mysql_systemd_start_pre,
-          mysql_systemd: mysql_systemd
-        )
-        cookbook 'mysql'
-        notifies :run, "execute[#{new_resource.instance} systemctl daemon-reload]", :immediately
-        action :create
+      
+      # this is the main systemd override dir 
+      if (v8 and mysql_instance)
+        directory "/etc/systemd/system/mysqld@#{mysql_instance}.service.d" do
+          owner 'root'
+          group 'root'
+          mode '0755'
+          recursive true
+          action :create
+        end
+        
+        # this is the main systemd unit file
+        template "/etc/systemd/system/mysqld@#{mysql_instance}.service.d/override.conf" do
+          path "/etc/systemd/system/mysqld@#{mysql_instance}.service.d/override.conf"
+          source "systemd/mysqld@#{mysql_instance}_override.conf.erb"
+          owner 'root'
+          group 'root'
+          mode '0644'
+          variables(
+                    config: new_resource,
+                    etc_dir: etc_dir,
+                    base_dir: base_dir,
+                    mysqld_bin: mysqld_bin,
+                    mysql_systemd_start_pre: mysql_systemd_start_pre,
+                    mysql_systemd: mysql_systemd
+                    )
+          cookbook 'mysql'
+          notifies :run, "execute[#{new_resource.instance} systemctl daemon-reload]", :immediately
+          action :create
+        end
+      else
+        template "/etc/systemd/system/#{mysql_name}.service" do
+          path "/etc/systemd/system/#{mysql_name}.service"
+          source 'systemd/mysqld.service.erb'
+          owner 'root'
+          group 'root'
+          mode '0644'
+          variables(
+                    config: new_resource,
+                    etc_dir: etc_dir,
+                    base_dir: base_dir,
+                    mysqld_bin: mysqld_bin,
+                    mysql_systemd_start_pre: mysql_systemd_start_pre,
+                    mysql_systemd: mysql_systemd
+                    )
+          cookbook 'mysql'
+          notifies :run, "execute[#{new_resource.instance} systemctl daemon-reload]", :immediately
+          action :create
+        end
       end
-
+    
       # avoid 'Unit file changed on disk' warning
       execute "#{new_resource.instance} systemctl daemon-reload" do
         command '/bin/systemctl daemon-reload'
         action :nothing
       end
-
-      # tmpfiles.d config so the service survives reboot
-      template "/usr/lib/tmpfiles.d/#{mysql_name}.conf" do
+    
+    # tmpfiles.d config so the service survives reboot
+    template "/usr/lib/tmpfiles.d/#{mysql_name}.conf" do
         path "/usr/lib/tmpfiles.d/#{mysql_name}.conf"
         source 'tmpfiles.d.conf.erb'
         owner 'root'
@@ -80,8 +110,8 @@ module MysqlCookbook
       end
 
       # service management resource
-      service mysql_name.to_s do
-        service_name mysql_name
+      service mysql_service_name.to_s do
+        service_name service_name
         provider Chef::Provider::Service::Systemd
         supports restart: true, status: true
         action [:enable, :start]

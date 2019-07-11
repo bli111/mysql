@@ -98,6 +98,24 @@ module MysqlCookbook
       end
     end
 
+    def mysql_service_name
+      if v8
+        "mysqld@#{mysql_instance}"
+      else
+        "#{mysql_name}"
+      end
+    end
+
+    def v8
+      p version.split('.')[0].to_i
+      version.split('.')[0].to_i == 8
+    end
+    
+    def mysql_instance
+      "#{instance}" if v8
+    end
+
+
     def default_socket_file
       "#{run_dir}/mysqld.sock"
     end
@@ -202,6 +220,22 @@ module MysqlCookbook
       # mysql will read \& as &, but \% as \%. Just escape bare-minimum \ and '
       sql_escaped_password = root_password.gsub('\\') { '\\\\' }.gsub("'") { '\\\'' }
 
+      if v8
+        <<-EOS
+          set -e
+          rm -rf /tmp/#{mysql_name}
+          mkdir /tmp/#{mysql_name}
+          cat > /tmp/#{mysql_name}/my.sql <<-'EOSQL'
+alter user 'root'@'localhost' identified by '#{sql_escaped_password}';
+EOSQL
+        #{db_init}
+        #{record_init}
+        while [ ! -f #{pid_file} ] ; do sleep 1 ; done
+        kill `cat #{pid_file}`
+        while [ -f #{pid_file} ] ; do sleep 1 ; done
+        #rm -rf /tmp/#{mysql_name}
+       EOS
+      else v8
       <<-EOS
         set -e
         rm -rf /tmp/#{mysql_name}
@@ -221,6 +255,7 @@ EOSQL
        while [ -f #{pid_file} ] ; do sleep 1 ; done
        rm -rf /tmp/#{mysql_name}
       EOS
+      end
     end
 
     def wait_for_init
@@ -253,6 +288,7 @@ EOSQL
     end
 
     def db_init
+      return mysqld_initialize_cmd80 if v8
       return mysqld_initialize_cmd if v57plus
       mysql_install_db_cmd
     end
@@ -269,6 +305,16 @@ EOSQL
       cmd << " --datadir=#{data_dir}"
       cmd << ' --explicit_defaults_for_timestamp' if v56plus && !v57plus
       return "scl enable #{scl_name} \"#{cmd}\"" if scl_package?
+      cmd
+    end
+
+    def mysqld_initialize_cmd80
+      cmd = mysqld_bin
+      cmd << " --defaults-group-suffix=@#{instance}" if mysql_instance
+      cmd << " --defaults-file=#{etc_dir}/my.cnf"
+      cmd << ' --initialize'
+      return "scl enable #{scl_name} \"#{cmd}\"" if scl_package?
+      p "============== mysqld_bin #{cmd}} =============="
       cmd
     end
 
@@ -318,7 +364,11 @@ EOSQL
     end
 
     def record_init
-      cmd = v56plus ? mysqld_bin : mysqld_safe_bin
+      if v8 
+        cmd = mysqld_bin
+      else
+        cmd = v56plus ? mysqld_bin : mysqld_safe_bin
+      end
       cmd << " --defaults-file=#{etc_dir}/my.cnf"
       cmd << " --init-file=/tmp/#{mysql_name}/my.sql"
       cmd << ' --explicit_defaults_for_timestamp' if v56plus
