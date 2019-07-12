@@ -107,7 +107,6 @@ module MysqlCookbook
     end
 
     def v8
-      p version.split('.')[0].to_i
       version.split('.')[0].to_i == 8
     end
     
@@ -235,7 +234,7 @@ EOSQL
         while [ -f #{pid_file} ] ; do sleep 1 ; done
         #rm -rf /tmp/#{mysql_name}
        EOS
-      else v8
+      else
       <<-EOS
         set -e
         rm -rf /tmp/#{mysql_name}
@@ -314,7 +313,6 @@ EOSQL
       cmd << " --defaults-file=#{etc_dir}/my.cnf"
       cmd << ' --initialize'
       return "scl enable #{scl_name} \"#{cmd}\"" if scl_package?
-      p "============== mysqld_bin #{cmd}} =============="
       cmd
     end
 
