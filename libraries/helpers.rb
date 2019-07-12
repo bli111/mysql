@@ -99,7 +99,7 @@ module MysqlCookbook
     end
 
     def mysql_service_name
-      if v8
+      if v8 and mysql_instance
         "mysqld@#{mysql_instance}"
       else
         "#{mysql_name}"

@@ -111,8 +111,8 @@ module MysqlCookbook
 
       # service management resource
       service mysql_service_name.to_s do
-        service_name service_name
         provider Chef::Provider::Service::Systemd
+        service_name mysql_service_name
         supports restart: true, status: true
         action [:enable, :start]
       end
@@ -120,19 +120,19 @@ module MysqlCookbook
 
     action :stop do
       # service management resource
-      service mysql_name.to_s do
-        service_name mysql_name
-        provider Chef::Provider::Service::Systemd
-        supports status: true
-        action [:disable, :stop]
-        only_if { ::File.exist?("/usr/lib/systemd/system/#{mysql_name}.service") }
+        service mysql_service_name.to_s do
+          provider Chef::Provider::Service::Systemd
+          service_name mysql_service_name
+          supports status: true
+          action [:disable, :stop]
+          only_if { ::File.exist?("/usr/lib/systemd/system/msqld@.service") or ::File.exist?("/usr/lib/systemd/system/#{mysql_name}.service")}
       end
     end
 
     action :restart do
       # service management resource
-      service mysql_name.to_s do
-        service_name mysql_name
+      service mysql_service_name.to_s do
+        service_name mysql_service_name
         provider Chef::Provider::Service::Systemd
         supports restart: true
         action :restart
@@ -141,8 +141,8 @@ module MysqlCookbook
 
     action :reload do
       # service management resource
-      service mysql_name.to_s do
-        service_name mysql_name
+      service mysql_service_name.to_s do
+        service_name mysql_service_name
         provider Chef::Provider::Service::Systemd
         action :reload
       end
@@ -161,8 +161,8 @@ module MysqlCookbook
 
       def delete_stop_service
         # service management resource
-        service mysql_name.to_s do
-          service_name mysql_name
+        service mysql_service_name.to_s do
+          service_name mysql_service_name
           provider Chef::Provider::Service::Systemd
           supports status: true
           action [:disable, :stop]
