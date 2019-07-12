@@ -232,7 +232,7 @@ EOSQL
         while [ ! -f #{pid_file} ] ; do sleep 1 ; done
         kill `cat #{pid_file}`
         while [ -f #{pid_file} ] ; do sleep 1 ; done
-        #rm -rf /tmp/#{mysql_name}
+        rm -rf /tmp/#{mysql_name}
        EOS
       else
       <<-EOS
