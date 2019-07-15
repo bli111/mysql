@@ -36,7 +36,7 @@ module MysqlCookbook
         cookbook 'mysql'
         action :create
       end
-      
+
       # this is the main systemd override dir 
       if (v8 and mysql_instance)
         directory "/etc/systemd/system/mysqld@#{mysql_instance}.service.d" do
@@ -46,7 +46,7 @@ module MysqlCookbook
           recursive true
           action :create
         end
-        
+
         # this is the main systemd unit file
         template "/etc/systemd/system/mysqld@#{mysql_instance}.service.d/override.conf" do
           path "/etc/systemd/system/mysqld@#{mysql_instance}.service.d/override.conf"
@@ -86,7 +86,7 @@ module MysqlCookbook
           action :create
         end
       end
-    
+
       # avoid 'Unit file changed on disk' warning
       execute "#{new_resource.instance} systemctl daemon-reload" do
         command '/bin/systemctl daemon-reload'
@@ -117,7 +117,7 @@ module MysqlCookbook
         action [:enable, :start]
       end
     end
-    
+
     action :stop do
       # service management resource
       service mysql_service_name.to_s do
@@ -128,7 +128,7 @@ module MysqlCookbook
         only_if { ::File.exist?("/usr/lib/systemd/system/msqld@.service") or ::File.exist?("/usr/lib/systemd/system/#{mysql_name}.service")}
       end
     end
-    
+
     action :restart do
       # service management resource
       service mysql_service_name.to_s do
@@ -147,7 +147,7 @@ module MysqlCookbook
         action :reload
       end
     end
-    
+
     action_class do
       def stop_system_service
         # service management resource
