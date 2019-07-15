@@ -104,7 +104,7 @@ module MysqlCookbook
           run_dir: run_dir,
           run_user: new_resource.run_user,
           run_group: new_resource.run_group
-          )
+        )
         cookbook 'mysql'
         action :create
       end
