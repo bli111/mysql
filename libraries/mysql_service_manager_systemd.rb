@@ -92,23 +92,23 @@ module MysqlCookbook
         command '/bin/systemctl daemon-reload'
         action :nothing
       end
-    
-    # tmpfiles.d config so the service survives reboot
-    template "/usr/lib/tmpfiles.d/#{mysql_name}.conf" do
+      
+      # tmpfiles.d config so the service survives reboot
+      template "/usr/lib/tmpfiles.d/#{mysql_name}.conf" do
         path "/usr/lib/tmpfiles.d/#{mysql_name}.conf"
         source 'tmpfiles.d.conf.erb'
         owner 'root'
         group 'root'
         mode '0644'
         variables(
-          run_dir: run_dir,
-          run_user: new_resource.run_user,
-          run_group: new_resource.run_group
-        )
+                  run_dir: run_dir,
+                  run_user: new_resource.run_user,
+                  run_group: new_resource.run_group
+                  )
         cookbook 'mysql'
         action :create
       end
-
+      
       # service management resource
       service mysql_service_name.to_s do
         provider Chef::Provider::Service::Systemd
@@ -117,18 +117,18 @@ module MysqlCookbook
         action [:enable, :start]
       end
     end
-
+    
     action :stop do
       # service management resource
-        service mysql_service_name.to_s do
-          provider Chef::Provider::Service::Systemd
-          service_name mysql_service_name
-          supports status: true
-          action [:disable, :stop]
-          only_if { ::File.exist?("/usr/lib/systemd/system/msqld@.service") or ::File.exist?("/usr/lib/systemd/system/#{mysql_name}.service")}
+      service mysql_service_name.to_s do
+        provider Chef::Provider::Service::Systemd
+        service_name mysql_service_name
+        supports status: true
+        action [:disable, :stop]
+        only_if { ::File.exist?("/usr/lib/systemd/system/msqld@.service") or ::File.exist?("/usr/lib/systemd/system/#{mysql_name}.service")}
       end
     end
-
+    
     action :restart do
       # service management resource
       service mysql_service_name.to_s do
@@ -147,7 +147,7 @@ module MysqlCookbook
         action :reload
       end
     end
-
+    
     action_class do
       def stop_system_service
         # service management resource
